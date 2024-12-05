@@ -1,0 +1,88 @@
+{
+	"geode": "4.0.1",
+	"gd": {
+		"win": "2.2074",
+		"android": "2.2074",
+		"mac": "2.2074",
+		"ios": "2.2074"
+	},
+	"id": "firee.deck",
+	"name": "Geometry Deck",
+	"version": "v0.9.0",
+	"developer": "Firee",
+	"description": "Geometry Dash but overhauled to look like Steam's Big Picture Mode!",
+    "early-load": true,
+    "dependencies": [
+        {
+            "id": "geode.node-ids",
+            "version": ">=1.14.1",
+            "importance": "required"
+        }
+    ],
+    "links": {
+        "community": "https://discord.gg/XGBMVVvJ7J",
+        "source": "https://github.com/FireMario211/Geometry-Deck"
+    },
+    "tags": ["universal", "enhancement", "interface", "customization", "modtober24"],
+    "settings": {
+        "battery-percentage": {
+            "name": "Battery Percentage",
+            "description": "If the battery percentage should show next to the battery status.",
+            "default": false,
+            "type": "bool"
+        },
+        "show-chest": {
+            "name": "Show Chest",
+            "description": "Whether or not to show the daily chest on the top right.",
+            "default": true,
+            "type": "bool"
+        },
+        "show-battery": {
+            "name": "Show Battery",
+            "description": "Whether or not to show the battery status on the top right.",
+            "default": true,
+            "type": "bool"
+        },
+        "skip-intro": {
+            "name": "Skip Intro",
+            "description": "Skips the intro for the loading screen.",
+            "default": false,
+            "type": "bool"
+        },
+        "color-accent": {
+            "name": "Color Accent",
+            "description": "I cant decide a description for this",
+            "default": "#3AB2FF",
+            "type": "color"
+        }
+    },
+    "resources": {
+        "sprites": [
+            "resources/*.png"
+        ],
+        "files": [
+            "resources/*.ogg"
+        ],
+        "fonts": {
+            "Poppins": {
+                "path": "resources/Poppins.ttf",
+                "size": 64
+            },
+            "Nunito": {
+                "path": "resources/Nunito-Medium.ttf",
+                "size": 64
+            },
+            "NunitoBold": {
+                "path": "resources/Nunito-Bold.ttf",
+                "size": 64
+            }
+        }
+    },
+    "incompatibilities": [
+		{
+			"id": "ninxout.redash",
+			"version": "*",
+			"importance": "breaking"
+  		}
+  	]
+}
