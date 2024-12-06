@@ -70,3 +70,4 @@ ignore
 compile_commands.json
 build.sh
 xbox_simulator.py
+build-android.sh

@@ -36,25 +36,11 @@ class Utils {
     }
     static std::string get_current_time_string() {
         bool use_24_hour = false;
-        #ifdef _WIN32
+        #ifdef GEODE_IS_WINDOWS
             wchar_t time_format[256];
             GetLocaleInfoW(LOCALE_USER_DEFAULT, LOCALE_STIMEFORMAT, time_format, 256);
             std::wstring format_str(time_format);
             use_24_hour = format_str.find(L"H") != std::wstring::npos;
-        #else
-            std::locale loc("");
-            const std::time_get<char>& facet = std::use_facet<std::time_get<char>>(loc);
-            std::ios_base::iostate state;
-            std::tm t{};
-            facet.get_time("%X", &t, state);
-            if (state.fail()) {
-                use_24_hour = false;
-            }
-
-            char buffer[100];
-            strftime(buffer, sizeof(buffer), "%X", &t);
-            std::string time_format_str(buffer);
-            use_24_hour = time_format_str.find('H') != std::string::npos;
         #endif
 
 
@@ -62,7 +48,7 @@ class Utils {
         auto now_c = std::chrono::system_clock::to_time_t(now);
 
         std::tm now_tm;
-        #ifdef _WIN32
+        #ifdef GEODE_IS_WINDOWS
             localtime_s(&now_tm, &now_c);
         #else
             localtime_r(&now_c, &now_tm);

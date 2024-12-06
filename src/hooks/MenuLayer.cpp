@@ -15,7 +15,6 @@ class $modify(BigPic, MenuLayer) {
         //auto bottomMenu = this->getChildByID("bottom-menu");
         //if (!bottomMenu) return true;
         auto size = CCDirector::sharedDirector()->getWinSize();
-
         Utils::invisibleInVec(this, {"main-title", "more-games-menu", "social-media-menu", "level-editor-hint", "character-select-hint", "player-username"});
         Utils::invisibleInVec(this, {"profile-menu", "right-side-menu", "close-menu", "main-menu", "bottom-menu"});
         auto gradient = CCLayerGradient::create(ccc4(22, 22, 37, 255), ccc4(0, 0, 15, 254));
@@ -82,6 +81,19 @@ class $modify(BigPic, MenuLayer) {
         Loader::get()->queueInMainThread([bigPic]() {
             bigPic->createStatusbar();
         });
+        
+/*
+        if (!Mod::get()->getSettingValue<bool>("done-intro1")) {
+            auto alert = FLAlertLayer::create(
+                "Welcome",
+                "Hello! Thank you for using the <cy>Geometry Deck</c> mod!\nPlease note that this is in beta! Some features <cr>may not be available yet</c>, but they will be added in <cp>a future update</c>. Enjoy!",
+                "Dismiss"
+            );
+            alert->m_scene = this;
+            alert->show();
+            Mod::get()->setSettingValue("done-intro1", true);
+        }
+*/
         return true;
     }
     void keyDown(enumKeyCodes key) {

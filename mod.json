@@ -8,7 +8,7 @@
 	},
 	"id": "firee.deck",
 	"name": "Geometry Deck",
-	"version": "v0.9.0",
+	"version": "v1.0.0-beta.1",
 	"developer": "Firee",
 	"description": "Geometry Dash but overhauled to look like Steam's Big Picture Mode!",
     "early-load": true,
@@ -46,6 +46,12 @@
         "skip-intro": {
             "name": "Skip Intro",
             "description": "Skips the intro for the loading screen.",
+            "default": false,
+            "type": "bool"
+        },
+        "done-intro1": {
+            "name": "Dismissed Intro",
+            "description": "no description",
             "default": false,
             "type": "bool"
         },

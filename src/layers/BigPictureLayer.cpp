@@ -109,7 +109,7 @@ BatteryStatus GetBatteryPercentage() {
 }
 #else 
 BatteryStatus GetBatteryPercentage() {
-    return {-1, false, false};
+    return {0, false, false};
 }
 #endif
 
@@ -339,6 +339,10 @@ bool BigPictureLayer::init() {
         m_sideMenu->addChild(createButton(CCSprite::create("gear.png"_spr), "Settings", [this](CCObject*) {
             if (auto GM = GameManager::sharedState()) {
                 if (MenuLayer::get() != nullptr) {
+                    if (auto menuLayer = MenuLayer::get()) {
+                        menuLayer->onOptions(nullptr);
+                    }
+                    return;
                     toggleBar(false);
                     toggleBarChangeTop(true);
                     std::vector<BPCategory> options;
@@ -382,7 +386,7 @@ bool BigPictureLayer::init() {
                             auto fmod = FMODAudioEngine::sharedEngine();
                             fmod->stopAllMusic(true);
                         }},
-                        {"lol", "lmao even", "xd", BPOptionType::Button, BPValueType::Geode, "a button", [GM](matjson::Value v) {
+                        {"debug", "debug", "debug", BPOptionType::Button, BPValueType::Geode, "debug", [GM](matjson::Value v) {
                             if (auto menuLayer = MenuLayer::get()) {
                                 menuLayer->onOptions(nullptr);
                             }
@@ -408,8 +412,13 @@ bool BigPictureLayer::init() {
                             bool isFullscreen = GameManager::get()->getGameVariable("0025");
                             bool borderless = GM->getGameVariable("0170");
                             CCSize resolution = GM->resolutionForKey(GM->m_resolution);
+                            #ifdef GEODE_IS_MOBILE
+                            PlatformToolbox::resizeWindow(resolution.width, resolution.height);
+                            PlatformToolbox::toggleFullScreen(isFullscreen, borderless, false);
+                            #else
                             CCEGLView::sharedOpenGLView()->resizeWindow(resolution.width, resolution.height);
                             CCEGLView::sharedOpenGLView()->toggleFullScreen(isFullscreen, CCEGLView::sharedOpenGLView()->getIsBorderless(), false);
+                            #endif
                             GM->reloadAll(true, isFullscreen, false);
                         }}
                     }});
