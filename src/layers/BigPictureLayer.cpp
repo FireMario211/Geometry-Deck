@@ -296,6 +296,29 @@ bool BigPictureLayer::init() {
         //m_sideMenu->addChild(createButton(this, CCSprite::createWithSpriteFrameName("edit_delBtnSmall_001.png"), "Achievements", nullptr));
         //m_sideMenu->addChild(createButton(this, CCSprite::createWithSpriteFrameName("edit_delBtnSmall_001.png"), "Stats", nullptr));
         //m_sideMenu->addChild(createButton(this, CCSprite::createWithSpriteFrameName("geode.loader/geode-logo-outline-gold.png"), "Geode", nullptr));
+        if (auto rightSideMenu = as<CCMenu*>(menuLayer->getChildByID("right-side-menu"))) {
+            CCArrayExt<CCMenuItemSpriteExtra*> children = rightSideMenu->getChildren();
+            auto toggleBarCallback = [this](CCObject*){
+                toggleBar();
+            };
+            for (int i = children.size() - 1; i >= 1; i--) {
+                auto child = children[i];
+                std::string name = child->getID();
+                CCMenuItemSpriteExtra* button;
+                if (auto circleButton = child->getChildByType<CircleButtonSprite>(0)) {
+                    if (auto sprBtn = circleButton->getChildByType<CCSprite>(0)) {
+                        button = createButton(sprBtn, name, child->m_pfnSelector);
+                    }
+                } else {
+                    if (auto sprBtn = child->getChildByType<CCSprite>(0)) {
+                        button = createButton(sprBtn, name, child->m_pfnSelector);
+                    } else {
+                        button = createButton(CCSprite::create("geode.loader/geode-logo-outline-gold.png"), name, child->m_pfnSelector);
+                    }
+                }
+                if (button) m_sideMenu->addChild(button);
+            }
+        }
         if (auto bottomMenu = as<CCMenu*>(menuLayer->getChildByID("bottom-menu"))) {
             CCArrayExt<CCMenuItemSpriteExtra*> children = bottomMenu->getChildren();
             auto toggleBarCallback = [this](CCObject*){
@@ -364,7 +387,7 @@ bool BigPictureLayer::init() {
                         }}
                     }});
                     options.push_back({"Audio", "audio.png"_spr, {
-                        {"Music", "bgVolume", "", BPOptionType::Slider, BPValueType::DSDict, nullptr, [GM](matjson::Value v) {
+                        {"Music", "bgVolume", "", BPOptionType::Slider, BPValueType::DSDict, "audio.png"_spr, [GM](matjson::Value v) {
                             float value = v.asDouble().unwrapOrDefault();
                             auto fmod = FMODAudioEngine::sharedEngine();
                             if (value < 0.03F) return fmod->setBackgroundMusicVolume(0.F);
@@ -374,7 +397,7 @@ bool BigPictureLayer::init() {
                                 GM->playMenuMusic();
                             }
                         }},
-                        {"SFX", "sfxVolume", "", BPOptionType::Slider, BPValueType::DSDict, nullptr, [GM](matjson::Value v) {
+                        {"SFX", "sfxVolume", "", BPOptionType::Slider, BPValueType::DSDict, "audio.png"_spr, [GM](matjson::Value v) {
                             float value = v.asDouble().unwrapOrDefault();
                             auto fmod = FMODAudioEngine::sharedEngine();
                             if (value < 0.03F) value = 0.0F;
@@ -398,11 +421,6 @@ bool BigPictureLayer::init() {
                             if (auto fmod = FMODAudioEngine::sharedEngine()) {
                                 FLAlertLayer::create(nullptr,"FMOD Debug",fmod->getFMODStatus(0),"OK",0x0,380.0)->show();
                             }
-                        }},
-                        {"", "debug-btn", "", BPOptionType::Button, BPValueType::Geode, "Debug", [GM](matjson::Value v) {
-                            if (auto menuLayer = MenuLayer::get()) {
-                                menuLayer->onOptions(nullptr);
-                            }
                         }}
                     }});
                     std::vector<matjson::Value> resolutions;
@@ -412,40 +430,93 @@ bool BigPictureLayer::init() {
                         resolutions.push_back(fmt::format("{}x{}", res.width, res.height));
                     }
                     options.push_back({"Video", "video.png"_spr, {
-                        {"Display Resolution", "resolution", "", BPOptionType::Slider, BPValueType::DSDict, resolutions, [GM](matjson::Value v) {
+                        {"Display Resolution", "resolution", "", BPOptionType::Slider, BPValueType::DSDict, resolutions, [this, GM](matjson::Value v) {
                             GM->m_resolution = v.asInt().unwrapOrDefault();
+                            hasDoneResChanges = true;
                         }},
-                        {"Texture Quality", "texQuality", "", BPOptionType::Slider, BPValueType::DSDict, texQualities, [GM](matjson::Value v) {
+                        {"Texture Quality", "texQuality", "", BPOptionType::Slider, BPValueType::DSDict, texQualities, [this, GM](matjson::Value v) {
                             GM->m_texQuality = v.asInt().unwrapOrDefault();
+                            hasDoneTextureChanges = true;
                         }},
-                        {"Fullscreen", "0025", "", BPOptionType::Toggle, BPValueType::IntVar, true, emptyFunc},
-                        {"Borderless", "0170", "", BPOptionType::Toggle, BPValueType::IntVar, nullptr, emptyFunc},
-                        {"", "", "Applies changes", BPOptionType::Button, BPValueType::Geode, "Apply Changes", [GM](matjson::Value v) {
-                            auto ghostVideoLayer = VideoOptionsLayer::create();
+                        {"Fullscreen", "0025", "", BPOptionType::Toggle, BPValueType::IntVar, true, [this](matjson::Value) { hasDoneVideoChanges = true; }},
+                        {"Borderless", "0170", "", BPOptionType::Toggle, BPValueType::IntVar, false, [this](matjson::Value) { hasDoneVideoChanges = true; }},
+                        {"Borderless Fix", "0175", "", BPOptionType::Toggle, BPValueType::IntVar, false, [this](matjson::Value) { hasDoneVideoChanges = true; }},
+                        {"", "", "Applies changes", BPOptionType::Button, BPValueType::Geode, "Apply Changes", [this, GM](matjson::Value v) {
+                            if (!hasDoneVideoChanges && !hasDoneTextureChanges && !hasDoneResChanges) return FLAlertLayer::create("Graphics", "No changes have been made.", "OK")->show();
                             bool isFullscreen = GameManager::get()->getGameVariable("0025");
                             bool borderless = GM->getGameVariable("0170");
-                            ghostVideoLayer->m_windowed = isFullscreen;
-                            ghostVideoLayer->m_borderless = borderless;
+                            bool borderlessFix = GM->getGameVariable("0175");
+
+                            /*auto ghostVideoLayer = VideoOptionsLayer::create();
+                            ghostVideoLayer->m_windowed = !isFullscreen;
+                            ghostVideoLayer->m_borderless = !borderless;
                             ghostVideoLayer->m_currentResolution = GM->m_resolution - 1;
-                            ghostVideoLayer->m_textureQuality = GM->m_texQuality;
-                            /*CCSize resolution = GM->resolutionForKey(GM->m_resolution);
+                            ghostVideoLayer->m_textureQuality = GM->m_texQuality;*/
+                            CCSize resolution = GM->resolutionForKey(GM->m_resolution);
+                            //cocos2d::TextureQuality quality, cocos2d::CCSize resolution, bool windowed, bool borderless, bool fix, bool changedResolution
+                            GraphicsReloadLayer::create(
+                                (TextureQuality)GM->m_texQuality,
+                                GM->resolutionForKey(GM->m_resolution),
+                                isFullscreen,
+                                borderless,
+                                borderlessFix,
+                                hasDoneVideoChanges
+                            )->performReload();
+                            // yeah this definitely works
+                            /*CCDirector::sharedDirector()->replaceScene(CCScene::create());
                             #ifdef GEODE_IS_MOBILE
                             PlatformToolbox::resizeWindow(resolution.width, resolution.height);
-                            PlatformToolbox::toggleFullScreen(!isFullscreen, borderless, false);
+                            if (hasDoneVideoChanges) {
+                                PlatformToolbox::toggleFullScreen(!isFullscreen, borderless, isFullscreen);
+                            }
                             #else
                             CCEGLView::sharedOpenGLView()->resizeWindow(resolution.width, resolution.height);
-                            CCEGLView::sharedOpenGLView()->toggleFullScreen(!isFullscreen, CCEGLView::sharedOpenGLView()->getIsBorderless(), false);
+                            if (hasDoneVideoChanges) {
+                                CCEGLView::sharedOpenGLView()->toggleFullScreen(!isFullscreen, CCEGLView::sharedOpenGLView()->getIsBorderless(), isFullscreen);
+                            }
                             #endif
-                            GM->reloadAll(true, !isFullscreen, false);*/ 
-                            ghostVideoLayer->onApply(nullptr);
-                            ghostVideoLayer->release();
+                            if (hasDoneTextureChanges) {
+                                GM->runAction()
+                                CCDirector::sharedDirector()->popToRootScene();
+                                CCDirector::sharedDirector()->replaceScene(CCScene::create());
+                                GM->reloadAllStep2();
+                                CCDirector::sharedDirector()->replaceScene(MenuLayer::scene(true));
+                            } else {
+                                GM->reloadAll(false, false, false, true, false);
+                            }*/
+                            //ghostVideoLayer->onApply(nullptr);
+                            //ghostVideoLayer->release();
                         }},
                         {"ADVANCED", "", "advanced-title", BPOptionType::Title},
-                        {"Smooth Fix", "0023", "Makes some optimizations that can reduce lag. Disable if game speed becomes inconsistent.", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
-                        {"Show FPS", "0115", "Shows frames per second while playing.", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
-                        #ifndef GEODE_IS_MOBILE
+                        {"Smooth Fix", "0023", "Makes some optimizations that can reduce lag. Disable if game speed becomes inconsistent.",
+                        BPOptionType::Toggle, BPValueType::IntVar, false, [GM](matjson::Value v) {
+                            bool value = v.asBool().unwrapOrDefault();
+                            #ifdef GEODE_IS_MOBILE 
+                            PlatformToolbox::toggleSmoothFix(value);
+                            PlatformToolbox::toggleForceTimer(GM->getGameVariable("0032"));
+                            #else
+                            CCApplication::sharedApplication()->setSmoothFix(value);
+                            CCApplication::sharedApplication()->setForceTimer(GM->getGameVariable("0032"));
+                            #endif
+                        }},
+                        {"Vertical Sync", "0030", "",
+                        BPOptionType::Toggle, BPValueType::IntVar, false, [GM](matjson::Value v) {
+                            bool value = v.asBool().unwrapOrDefault();
+                            #ifdef GEODE_IS_MOBILE 
+                            PlatformToolbox::toggleVerticalSync(value);
+                            PlatformToolbox::toggleForceTimer(GM->getGameVariable("0032"));
+                            #else
+                            CCApplication::sharedApplication()->toggleVerticalSync(value);
+                            CCApplication::sharedApplication()->setForceTimer(GM->getGameVariable("0032"));
+                            #endif
+                        }},
+                        {"Show FPS", "0115", "Shows frames per second while playing.", BPOptionType::Toggle, BPValueType::IntVar, false, [GM](matjson::Value v) {
 
-                        {"FPS", "fps", "Change the FPS!", BPOptionType::Input, BPValueType::IntVar, nullptr, emptyFunc},
+                            bool value = v.asBool().unwrapOrDefault();
+                            CCDirector::sharedDirector()->toggleShowFPS(value, "chatFont.fnt", {0, 0});
+                        }},
+                        #ifndef GEODE_IS_MOBILE
+                        {"FPS", "0116", "Change the FPS!", BPOptionType::Input, BPValueType::IntVar, nullptr, emptyFunc},
                         {"", "", "Changes the FPS", BPOptionType::Button, BPValueType::Geode, "Apply FPS", [GM](matjson::Value v) {
                         
                         }}
@@ -453,7 +524,7 @@ bool BigPictureLayer::init() {
                     }});
                     // this is horrible, an example of bad coding
                     // it probably wouldve been so much easier to hook addToggle, but considering the function is inlined on windows, it would not be worth mid-hooking
-                    options.push_back({"Geometry Dash", "gdlogo-cube.png"_spr, {
+                    options.push_back({"Gameplay", "gdlogo-cube.png"_spr, {
                         {"GAMEPLAY", "", "gameplay-title", BPOptionType::Title},
                         {"Auto-Retry", "0026", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
                         {"Enable Faster Reset", "0052", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
@@ -462,9 +533,24 @@ bool BigPictureLayer::init() {
                         #endif
                         {"Flip 2-Player Controls", "0010", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
                         {"Always Limit Controls", "0011", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
-                        {"Disable Thumbstick", "0028", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        #ifndef GEODE_IS_MOBILE
+                        {"Disable Thumbstick", "0028", "", BPOptionType::Toggle, BPValueType::IntVar, false, [GM](matjson::Value v) {
+                            bool value = v.asBool().unwrapOrDefault();
+                            CCApplication::sharedApplication()->toggleMouseControl(!value);
+                        }},
                         {"Enable Quick Keys", "0163", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
-                        {"VISUAL", "", "visual-title", BPOptionType::Title},
+                        #endif
+                        {"PRACTICE", "", "performance-title", BPOptionType::Title},
+                        {"Hide Practice Buttons", "0071", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Hide Attempts", "0134", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Enable Auto-Checkpoints","0027", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Enable Quick Checkpoints","0068", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Enable Death Effect","0100", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Enable Normal Music In Editor","0125", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Show Hitboxes","0166", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Disable Player Hitbox","0171", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc}
+                    }});
+                    options.push_back({"Visual", "visual.png"_spr, {
                         #ifndef GEODE_IS_MOBILE
                         {"Show Cursor In-Game", "0024", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
                         #endif
@@ -482,16 +568,8 @@ bool BigPictureLayer::init() {
                         {"Switch Dash Fire Color", "0062", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
                         {"Switch Wave Trail Color","0096", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
                         {"Hide Playtest Text","0174", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
-                        {"PRACTICE", "", "performance-title", BPOptionType::Title},
-                        {"Hide Practice Buttons", "0071", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
-                        {"Hide Attempts", "0134", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
-                        {"Enable Auto-Checkpoints","0027", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
-                        {"Enable Quick Checkpoints","0068", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
-                        {"Enable Death Effect","0100", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
-                        {"Enable Normal Music In Editor","0125", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
-                        {"Show Hitboxes","0166", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
-                        {"Disable Player Hitbox","0171", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
-                        {"PERFORMANCE", "", "performance-title", BPOptionType::Title},
+                    }});
+                    options.push_back({"Performance", "performance.png"_spr, {
                         {"Increase Draw Capacity","0066", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
                         {"Enable Low Detail","0108", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
                         {"Disable High Object Alert","0082", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
@@ -500,7 +578,8 @@ bool BigPictureLayer::init() {
                         {"Disable Level Saving","0119", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
                         {"Save Gauntlets","0127", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
                         {"Disable Shader Anti-Aliasing","0155", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
-                        {"OTHER", "", "other-title", BPOptionType::Title},
+                    }});
+                    options.push_back({"Misc", "misc.png"_spr, {
                         {"More Comments","0094", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
                         {"Load Comments","0090", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
                         {"New Completed Filter","0073", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
@@ -510,11 +589,41 @@ bool BigPictureLayer::init() {
                         {"Show Leaderboard Percentage","0099", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
                         {"Do Not...","0095", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
                         {"Confirm Exit","0167", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
-                        {"Fast Menu","0168", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Fast Menu","0168", "", BPOptionType::Toggle, BPValueType::IntVar, false, [](matjson::Value v) {
+                            bool value = v.asBool().unwrapOrDefault();
+                            CCDirector::sharedDirector()->setFastMenu(value);
+                        }},
                         {"PARENTAL CONTROLS", "", "parental-title", BPOptionType::Title},
                         {"Disable Comments","0075", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
                         {"Disable Account Comments","0076", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
                         {"Only Allow Featured Levels","0077", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc}
+                    }});
+                    options.push_back({"Menu Buttons", "misc2.png"_spr, {
+                        {"Options Menu", "options-btn", "", BPOptionType::Button, BPValueType::Geode, "Click!", [GM](matjson::Value v) {
+                            if (auto menuLayer = MenuLayer::get()) {
+                                menuLayer->onOptions(nullptr);
+                            }
+                        }},
+                        {"More Games", "more-games-btn", "", BPOptionType::Button, BPValueType::Geode, "Click!", [GM](matjson::Value v) {
+                            if (auto menuLayer = MenuLayer::get()) {
+                                menuLayer->onMoreGames(nullptr);
+                            }
+                        }},
+                        {"DEBUG", "", "debug-title", BPOptionType::Title},
+                        {"BPAlert Test", "alert-btn", "", BPOptionType::Button, BPValueType::Geode, "Show", [GM](matjson::Value v) {
+                            BPAlert::create(
+                                "BPAlert", 
+                                {
+                                    {"Notification Test", []() {
+                                        Notification::create("Test!", NotificationIcon::Loading)->show();
+                                    }, {29, 199, 158}, {255, 255, 255}},
+                                    {"Color Change", []() {
+                                    }, {40, 70, 255}, {255, 70, 40}},
+                                }
+                            )->show();
+                        }},
+                        {fmt::format("Display Size: {}", PlatformToolbox::getDisplaySize()).c_str(), "", "db1", BPOptionType::Title},
+                        {fmt::format("Controller Connected: {}", PlatformToolbox::isControllerConnected()).c_str(), "", "db2", BPOptionType::Title},
                     }});
                     auto bpOptions = BPOptionsLayer::create(options);
                     bpOptions->show();
@@ -667,7 +776,7 @@ bool BigPictureLayer::keyPressDown(enumKeyCodes key) {
             if (currentIndexSelection > (maxIndex - 1)) currentIndexSelection = 0;
             setSelected(currentIndexSelection);
             return true;
-        }
+        } else if (key == enumKeyCodes::KEY_Space) return true;
         return false;
     }
     if (auto menuLayer = scene->getChildByType<MenuLayer>(0)) {
@@ -683,7 +792,7 @@ bool BigPictureLayer::keyPressDown(enumKeyCodes key) {
                     topLevels->updateSelected(true);
                     return true;
                 }
-            } else if (key == enumKeyCodes::KEY_Enter || key == enumKeyCodes::CONTROLLER_A) {
+            } else if (key == enumKeyCodes::KEY_Enter || key == enumKeyCodes::CONTROLLER_A || key == enumKeyCodes::KEY_Space) {
                 topLevels->enterSelected();
                 return true;
             } else if (key == enumKeyCodes::CONTROLLER_Start || key == enumKeyCodes::KEY_Backspace) {
@@ -917,11 +1026,12 @@ void BigPictureLayer::createStatusbar() {
         topRightMenu->addChild(m_timeLabel);
         auto batteryIcon = CCSprite::create("batteryOutline.png"_spr);
         batteryIcon->setScale(0.35F);
-        m_batteryFill = CCSprite::create("square.png");
+        m_batteryFill = CCScale9Sprite::create("square.png");
+        m_batteryFill->setContentSize({16, 16});
         m_batteryFill->setAnchorPoint({0, 0.5});
         m_batteryFill->setScaleX(0.F); // max of 2.0F scale
         m_batteryLabel = CCLabelBMFont::create("100%", "Nunito.fnt"_spr);
-        m_batteryLabel->setScale(1.5F);
+        m_batteryLabel->setScale(1.6F);
         m_batteryLabel->setAnchorPoint({1, 0});
 
         m_batteryWarning = CCSprite::create("batteryWarn.png"_spr);
@@ -960,40 +1070,46 @@ void BigPictureLayer::createStatusbar() {
                 )
             )
         );
-        if (GetBatteryPercentage().found) {
-            batteryIcon->runAction(
-                CCRepeatForever::create(
-                    CCSequence::createWithTwoActions(
-                        CCDelayTime::create(3.30F),
-                        CCCallFunc::create(this, callfunc_selector(BigPictureLayer::updateBattery))
-                    )
+        batteryIcon->runAction(
+            CCRepeatForever::create(
+                CCSequence::createWithTwoActions(
+                    CCDelayTime::create(3.30F),
+                    CCCallFunc::create(this, callfunc_selector(BigPictureLayer::updateBattery))
                 )
-            );
-        }
+            )
+        );
         updateBattery();
     }
 }
 
+bool shouldCheckBattery = true;
+
 void BigPictureLayer::updateBattery() {
-    auto batteryStatus = GetBatteryPercentage();
-    float scale = (batteryStatus.percent >= 0) ? batteryStatus.percent * 0.02F : 0;
-    if (!batteryStatus.found) {
-        m_batteryWarning->setVisible(true);
-        return;
-    }
     m_chestBtn->setVisible(Mod::get()->getSettingValue<bool>("show-chest"));
-    
-    m_batteryCharging->setVisible(batteryStatus.charging);
-    m_batteryFill->setScaleX(scale);
-    m_batteryFill->setColor(GetBatteryColor(batteryStatus.percent));
-    m_batteryLabel->setString(fmt::format("{}%", batteryStatus.percent).c_str());
-    m_batteryLabel->setVisible(Mod::get()->getSettingValue<bool>("battery-percentage"));
-    if (Mod::get()->getSettingValue<bool>("battery-percentage")) {
+    if (Mod::get()->getSettingValue<bool>("battery-percentage") && Mod::get()->getSettingValue<bool>("show-battery")) {
         m_chestBtn->setPositionX(25.7F);
     } else {
-        m_chestBtn->setPositionX(51.7F);
+        if (Mod::get()->getSettingValue<bool>("show-battery")) {
+            m_chestBtn->setPositionX(51.7F);
+        } else {
+            m_chestBtn->setPositionX(80.7F);
+        }
     }
     m_batteryBtn->setVisible(Mod::get()->getSettingValue<bool>("show-battery"));
+    if (shouldCheckBattery) {
+        auto batteryStatus = GetBatteryPercentage();
+        float scale = (batteryStatus.percent >= 0) ? batteryStatus.percent * 0.02F : 0;
+        if (!batteryStatus.found) {
+            m_batteryWarning->setVisible(true);
+            shouldCheckBattery = false;
+            return;
+        }
+        m_batteryCharging->setVisible(batteryStatus.charging);
+        m_batteryFill->setScaleX(scale);
+        m_batteryFill->setColor(GetBatteryColor(batteryStatus.percent));
+        m_batteryLabel->setString(fmt::format("{}%", batteryStatus.percent).c_str());
+        m_batteryLabel->setVisible(Mod::get()->getSettingValue<bool>("battery-percentage") && Mod::get()->getSettingValue<bool>("show-battery"));
+    }
 }
 
 void BigPictureLayer::updateTime() {

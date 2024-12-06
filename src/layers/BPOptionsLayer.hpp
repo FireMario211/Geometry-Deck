@@ -4,7 +4,7 @@
 #include <Geode/Geode.hpp>
 using namespace geode::prelude;
 
-enum BPOptionType {
+enum class BPOptionType {
     Title,
     Toggle,
     Input,
@@ -12,7 +12,7 @@ enum BPOptionType {
     Button,
     Dropdown
 };
-enum BPValueType {
+enum class BPValueType {
     IntVar,
     DSDict,
     Geode
@@ -100,6 +100,7 @@ class BPOptionsLayer : public CCLayerGradient {
         void enterSelected();
 
         void updateOption(BPOption, matjson::Value);
+        void onSliderChange(CCObject*);
 
         void regenCategory(BPCategory);
         virtual bool init(std::vector<BPCategory> categories);

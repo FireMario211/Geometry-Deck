@@ -26,6 +26,9 @@ class LevelItem : public CCScale9Sprite {
         void setCallback(std::function<void(bool)> callback) {
             m_callback = callback;
         }
+        bool isSelected() {
+            return selectedBgSpr->isVisible();
+        }
         void setSelected(bool visible) {
             selectedBgSpr->setVisible(visible);
             this->runAction(CCEaseBackOut::create(CCScaleTo::create(0.25F, (visible) ? 1.05F : 1.0F)));

@@ -8,7 +8,7 @@
 	},
 	"id": "firee.deck",
 	"name": "Geometry Deck",
-	"version": "v1.0.0-beta.2",
+	"version": "v1.0.0-beta.3",
 	"developer": "Firee",
 	"description": "Geometry Dash but overhauled to look like Steam's Big Picture Mode!",
     "early-load": true,

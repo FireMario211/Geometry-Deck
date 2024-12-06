@@ -38,6 +38,7 @@ class TopLevels : public CCLayer {
         int getCurrentIndex() { return currentIndex; };
         int getMaxIndex() { return maxIndex; };
         void updateSelected(bool inc);
+        void setSelected(int tag);
         void enterSelected();
         static TopLevels* create(TopLevelsCategory category);
         /*void loadLevels(int);

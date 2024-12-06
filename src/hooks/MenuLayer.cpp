@@ -15,6 +15,9 @@ class $modify(BigPic, MenuLayer) {
         auto size = CCDirector::sharedDirector()->getWinSize();
         Utils::invisibleInVec(this, {"main-title", "more-games-menu", "social-media-menu", "level-editor-hint", "character-select-hint", "player-username"});
         Utils::invisibleInVec(this, {"profile-menu", "right-side-menu", "close-menu", "main-menu", "bottom-menu"});
+        if (Loader::get()->isModLoaded("undefined0.icon_ninja")) {
+            Utils::invisibleInVec(this, {"main-menu-bg"}); //yeah not risking any crashes, sorry!
+        }
         auto gradient = CCLayerGradient::create(ccc4(22, 22, 37, 255), ccc4(0, 0, 15, 254));
         gradient->setID("menu-gradient"_spr);
         this->addChild(gradient);

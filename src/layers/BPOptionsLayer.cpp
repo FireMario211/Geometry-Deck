@@ -173,7 +173,7 @@ void BPOptionsLayer::updateOption(BPOption option, matjson::Value value) {
                             Mod::get()->setSettingValue(option.id, newValue);
                             option.callback(newValue);
                         } else if (option.valueType == BPValueType::IntVar) {
-                            GM->toggleGameVariable(option.id.c_str());
+                            GM->setGameVariable(option.id.c_str(), newValue);
                             option.callback(GM->getGameVariable(option.id.c_str()));
                         }
                         break;
@@ -206,13 +206,36 @@ void BPOptionsLayer::updateOption(BPOption option, matjson::Value value) {
     }
 }
 
+
+
+void BPOptionsLayer::onSliderChange(CCObject* sender) {
+    // nesting hell
+    if (auto sliderThumb = typeinfo_cast<SliderThumb*>(sender)) {
+        if (auto sliderTouchLogic = typeinfo_cast<SliderTouchLogic*>(sliderThumb->getParent())) {
+            if (auto slider = typeinfo_cast<Slider*>(sliderTouchLogic->getParent())) {
+                if (auto menu = typeinfo_cast<CCMenu*>(slider->getParent())) {
+                    if (auto bar = typeinfo_cast<CCScale9Sprite*>(menu->getChildByID("Bar-BG"))) {
+                        if (auto fill = bar->getChildByType<CCScale9Sprite>(0)) {
+                            float value = sliderThumb->getValue();
+                            fill->setScaleX(value * 13.3F);
+                            int index = menu->getTag();
+                            // probably will result in undefined behavior if this is wrong, hA!
+                            m_categories[currentSelIndex].options[index].callback((double)value);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 void BPOptionsLayer::regenCategory(BPCategory category) {
     m_scrollContent->removeAllChildrenWithCleanup(true);
     auto titleLabel = CCLabelBMFont::create(category.name, "NunitoBold.fnt"_spr);
     titleLabel->limitLabelWidth(100, 1.2F, 1.0F);
     m_scrollContent->addChild(titleLabel);
     auto colorAccent = Mod::get()->getSettingValue<ccColor3B>("color-accent");
-    m_scrollLayer->m_contentLayer->setContentHeight(category.options.size() * 75.F);
+    m_scrollLayer->m_contentLayer->setContentHeight(category.options.size() * 50.F);
     m_scrollContent->setContentHeight(m_scrollLayer->m_contentLayer->getContentHeight());
     auto GM = GameManager::sharedState();
     for (int i = 0; i < category.options.size(); i++) {
@@ -266,13 +289,36 @@ void BPOptionsLayer::regenCategory(BPCategory category) {
                 });
                 break;
             }
+            case BPOptionType::Slider: {
+                auto bar = CCScale9Sprite::create("square.png");
+                bar->setColor({30, 30, 40});
+                bar->setContentSize({200, 15});
+                bar->setID("Bar-BG");
+                auto barFill = CCScale9Sprite::create("square.png");
+                float currValue = GMDS_Dictionary::getFloatForKey(GM, option.id);
+                barFill->setScaleX(currValue * 13.3F);
+                barFill->setContentSize({15, 15});
+                barFill->setColor(colorAccent);
+                barFill->setAnchorPoint({0, 0.5});
+                barFill->setID("Fill-BG");
+                //auto sel = CCSprite::create("circle.png"_spr);
+                auto slider = Slider::create(this, menu_selector(BPOptionsLayer::onSliderChange), "sliderBar.png", "square.png", "circle.png"_spr, "circle.png"_spr, 1.0F);
+                slider->hideGroove(true);
+                slider->setBarVisibility(true);
+                //slider->setAnchorPoint({1, 0.5});
+                node->addChildAtPosition(bar, Anchor::Center, {0, 0});
+                bar->addChildAtPosition(barFill, Anchor::Left, {0, 0});
+                node->addChildAtPosition(slider, Anchor::Center, {0, 0});
+                slider->setValue(currValue);
+                break;
+            }
             case BPOptionType::Title: {
                 break;
             }
             default:
                 continue;
         }
-        if (option.type != BPOptionType::Title) {
+        if (option.type != BPOptionType::Title && option.type != BPOptionType::Slider && button != nullptr) {
             button->setAnchorPoint({1, 0.5});
             node->addChildAtPosition(button, Anchor::Right, {-15, 0});
         }

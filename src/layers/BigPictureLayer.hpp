@@ -12,7 +12,10 @@ class BigPictureLayer : public CCLayer {
         CCMenuItemSpriteExtra* m_batteryBtn;
         CCLabelBMFont* m_timeLabel;
 
-        CCSprite* m_batteryFill;
+        bool hasDoneVideoChanges = false;
+        bool hasDoneTextureChanges = false;
+        bool hasDoneResChanges = false;
+        CCScale9Sprite* m_batteryFill;
         CCSprite* m_batteryCharging;
         CCSprite* m_batteryWarning;
         CCLabelBMFont* m_batteryLabel;

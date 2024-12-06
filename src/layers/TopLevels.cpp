@@ -136,15 +136,12 @@ void TopLevels::regenerateLevels() {
                     }
                 });
             }
-            auto menuItem = CCMenuItemExt::createSpriteExtra(item, [item](CCObject*) {
-                auto scene = CCScene::get();
-                if (!scene) return;
-                /*if (auto menuLayer = MenuLayer::get()) {
-                    if (auto bigPicture = menuLayer->getChildByType<BigPictureLayer>(0)) {
-                        bigPicture->setShown(false);
-                    }
-                }*/
-                item->selectLevel();
+            auto menuItem = CCMenuItemExt::createSpriteExtra(item, [item, i, this](CCObject*) {
+                if (item->isSelected()) {
+                    item->selectLevel();
+                } else {
+                    setSelected(i + 1);
+                }
             });
             if (i == 0) {
                 menuItem->setPosition({50, 0});
@@ -184,6 +181,29 @@ void TopLevels::updateSelected(bool inc) {
                     CCMoveTo::create(0.5F, {m_scrollLayer->m_contentLayer->getPositionX(), 0})
                 ));
             } else if (currentIndex > 8) {
+                m_scrollLayer->m_contentLayer->runAction(CCEaseExponentialOut::create(
+                    CCMoveTo::create(0.5F, {m_scrollLayer->m_contentLayer->getPositionX(), -m_scrollLayer->m_contentLayer->getContentHeight() + m_scrollLayer->getContentHeight()})
+                ));
+            } else {
+                m_scrollLayer->m_contentLayer->runAction(CCEaseExponentialOut::create(
+                    CCMoveTo::create(0.5F, {m_scrollLayer->m_contentLayer->getPositionX(), (currentIndex - 2) * -85.75F})
+                ));
+            }
+            updateThumbnail();
+        }
+    }
+}
+
+void TopLevels::setSelected(int tag) {
+    if (auto menuItem = as<CCMenuItemSpriteExtra*>(m_scrollContent->getChildByTag(currentIndex))) {
+        if (auto item = typeinfo_cast<LevelItem*>(menuItem->getChildren()->firstObject())) {
+            item->setSelected(false);
+            currentIndex = tag;
+            if (tag < 3) {
+                m_scrollLayer->m_contentLayer->runAction(CCEaseExponentialOut::create(
+                    CCMoveTo::create(0.5F, {m_scrollLayer->m_contentLayer->getPositionX(), 0})
+                ));
+            } else if (tag > 8) {
                 m_scrollLayer->m_contentLayer->runAction(CCEaseExponentialOut::create(
                     CCMoveTo::create(0.5F, {m_scrollLayer->m_contentLayer->getPositionX(), -m_scrollLayer->m_contentLayer->getContentHeight() + m_scrollLayer->getContentHeight()})
                 ));
