@@ -12,8 +12,6 @@ class $modify(BigPic, MenuLayer) {
     }
     bool init() {
         if (!MenuLayer::init()) return false;
-        //auto bottomMenu = this->getChildByID("bottom-menu");
-        //if (!bottomMenu) return true;
         auto size = CCDirector::sharedDirector()->getWinSize();
         Utils::invisibleInVec(this, {"main-title", "more-games-menu", "social-media-menu", "level-editor-hint", "character-select-hint", "player-username"});
         Utils::invisibleInVec(this, {"profile-menu", "right-side-menu", "close-menu", "main-menu", "bottom-menu"});
@@ -39,21 +37,11 @@ class $modify(BigPic, MenuLayer) {
             content->getContentSize().width,
             1000.F
         });
-        //m_scrollLayer->m_contentLayer->setRotation(-90);
         content->setContentHeight(scrollLayer->m_contentLayer->getContentHeight());
         content->registerWithTouchDispatcher();
         
         scrollLayer->m_contentLayer->addChild(content);
         scrollLayer->setTouchEnabled(true);
-        /*content->setLayout(
-            ColumnLayout::create()
-                ->setAxisAlignment(AxisAlignment::Even)
-                ->setCrossAxisOverflow(false)
-                ->setGap(2)
-                ->setGrowCrossAxis(true)
-                ->setAutoScale(false)
-                ->setAxisReverse(false)
-        );*/
 
         content->setPosition({220, 100});
 
@@ -78,6 +66,7 @@ class $modify(BigPic, MenuLayer) {
             bigPicture->enableAllButtons();
         }*/ 
 
+        // is this even needed
         Loader::get()->queueInMainThread([bigPic]() {
             bigPic->createStatusbar();
         });
@@ -107,6 +96,9 @@ class $modify(BigPic, MenuLayer) {
         }
         MenuLayer::keyDown(key);
     }
+#ifndef GEODE_IS_ANDROID
+    // func is too small...
+    // TODO for me later, test if MenuLayer::onQuit is fixed because justin fixed it
     void keyBackClicked() {
         // assume CONTROLLER_Back because WHY DOES IT NOT EMIT
         if (auto bigPicture = getChildByType<BigPictureLayer>(0)) {
@@ -115,4 +107,14 @@ class $modify(BigPic, MenuLayer) {
             }
         }
     }
+#else 
+    void onQuit(CCObject*) {
+        // assume CONTROLLER_Back because WHY DOES IT NOT EMIT
+        if (auto bigPicture = getChildByType<BigPictureLayer>(0)) {
+            if (bigPicture->isVisible()) {
+                bigPicture->keyPressDown(cocos2d::CONTROLLER_Back);
+            }
+        }
+    }
+#endif
 };

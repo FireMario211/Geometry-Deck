@@ -380,13 +380,26 @@ bool BigPictureLayer::init() {
                             if (value < 0.03F) value = 0.0F;
                             fmod->setEffectsVolume(value);
                         }},
-                        {"Menu Music", "0122", "", BPOptionType::Toggle, BPValueType::IntVar, nullptr, [GM](matjson::Value v) {
+                        {"Menu Music", "0122", "", BPOptionType::Toggle, BPValueType::IntVar, true, [GM](matjson::Value v) {
                             bool value = v.asBool().unwrapOrDefault();
                             if (!value) return GM->fadeInMenuMusic();
                             auto fmod = FMODAudioEngine::sharedEngine();
                             fmod->stopAllMusic(true);
                         }},
-                        {"debug", "debug", "debug", BPOptionType::Button, BPValueType::Geode, "debug", [GM](matjson::Value v) {
+                        #ifndef GEODE_IS_MOBILE
+                        {"Change Custom Songs Location", "0033", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        #endif
+                        {"Disable Song Alert", "0083", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"No Song Limit", "0018", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Reduce Quality", "0142", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Audio Fix 01", "0159", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Music Offset", "0083", "", BPOptionType::Slider, BPValueType::Geode, nullptr, emptyFunc},
+                        {"", "debug-btn", "", BPOptionType::Button, BPValueType::Geode, "FMOD Debug", [GM](matjson::Value v) {
+                            if (auto fmod = FMODAudioEngine::sharedEngine()) {
+                                FLAlertLayer::create(nullptr,"FMOD Debug",fmod->getFMODStatus(0),"OK",0x0,380.0)->show();
+                            }
+                        }},
+                        {"", "debug-btn", "", BPOptionType::Button, BPValueType::Geode, "Debug", [GM](matjson::Value v) {
                             if (auto menuLayer = MenuLayer::get()) {
                                 menuLayer->onOptions(nullptr);
                             }
@@ -405,22 +418,103 @@ bool BigPictureLayer::init() {
                         {"Texture Quality", "texQuality", "", BPOptionType::Slider, BPValueType::DSDict, texQualities, [GM](matjson::Value v) {
                             GM->m_texQuality = v.asInt().unwrapOrDefault();
                         }},
-                        {"Fullscreen", "0025", "", BPOptionType::Toggle, BPValueType::IntVar, nullptr, emptyFunc},
+                        {"Fullscreen", "0025", "", BPOptionType::Toggle, BPValueType::IntVar, true, emptyFunc},
                         {"Borderless", "0170", "", BPOptionType::Toggle, BPValueType::IntVar, nullptr, emptyFunc},
-                        {"", "Applies changes", "apply-changes", BPOptionType::Button, BPValueType::Geode, "Apply Changes", [GM](matjson::Value v) {
-                            log::info("lmao even");
+                        {"", "", "Applies changes", BPOptionType::Button, BPValueType::Geode, "Apply Changes", [GM](matjson::Value v) {
+                            auto ghostVideoLayer = VideoOptionsLayer::create();
                             bool isFullscreen = GameManager::get()->getGameVariable("0025");
                             bool borderless = GM->getGameVariable("0170");
-                            CCSize resolution = GM->resolutionForKey(GM->m_resolution);
+                            ghostVideoLayer->m_windowed = isFullscreen;
+                            ghostVideoLayer->m_borderless = borderless;
+                            ghostVideoLayer->m_currentResolution = GM->m_resolution - 1;
+                            ghostVideoLayer->m_textureQuality = GM->m_texQuality;
+                            /*CCSize resolution = GM->resolutionForKey(GM->m_resolution);
                             #ifdef GEODE_IS_MOBILE
                             PlatformToolbox::resizeWindow(resolution.width, resolution.height);
-                            PlatformToolbox::toggleFullScreen(isFullscreen, borderless, false);
+                            PlatformToolbox::toggleFullScreen(!isFullscreen, borderless, false);
                             #else
                             CCEGLView::sharedOpenGLView()->resizeWindow(resolution.width, resolution.height);
-                            CCEGLView::sharedOpenGLView()->toggleFullScreen(isFullscreen, CCEGLView::sharedOpenGLView()->getIsBorderless(), false);
+                            CCEGLView::sharedOpenGLView()->toggleFullScreen(!isFullscreen, CCEGLView::sharedOpenGLView()->getIsBorderless(), false);
                             #endif
-                            GM->reloadAll(true, isFullscreen, false);
+                            GM->reloadAll(true, !isFullscreen, false);*/ 
+                            ghostVideoLayer->onApply(nullptr);
+                            ghostVideoLayer->release();
+                        }},
+                        {"ADVANCED", "", "advanced-title", BPOptionType::Title},
+                        {"Smooth Fix", "0023", "Makes some optimizations that can reduce lag. Disable if game speed becomes inconsistent.", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Show FPS", "0115", "Shows frames per second while playing.", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        #ifndef GEODE_IS_MOBILE
+
+                        {"FPS", "fps", "Change the FPS!", BPOptionType::Input, BPValueType::IntVar, nullptr, emptyFunc},
+                        {"", "", "Changes the FPS", BPOptionType::Button, BPValueType::Geode, "Apply FPS", [GM](matjson::Value v) {
+                        
                         }}
+                        #endif
+                    }});
+                    // this is horrible, an example of bad coding
+                    // it probably wouldve been so much easier to hook addToggle, but considering the function is inlined on windows, it would not be worth mid-hooking
+                    options.push_back({"Geometry Dash", "gdlogo-cube.png"_spr, {
+                        {"GAMEPLAY", "", "gameplay-title", BPOptionType::Title},
+                        {"Auto-Retry", "0026", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Enable Faster Reset", "0052", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        #ifndef GEODE_IS_MOBILE
+                        {"Lock Cursor In-Game", "0128", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        #endif
+                        {"Flip 2-Player Controls", "0010", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Always Limit Controls", "0011", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Disable Thumbstick", "0028", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Enable Quick Keys", "0163", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"VISUAL", "", "visual-title", BPOptionType::Title},
+                        #ifndef GEODE_IS_MOBILE
+                        {"Show Cursor In-Game", "0024", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        #endif
+                        {"Hide Attempts", "0135", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Flip Pause Button", "0015", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Disable Portal Guide","0129", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Enable Orb Guide", "0130", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Disable Orb Scale","0140", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Disable Trigger Orb Scale","0141", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Disable Shake","0172", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Disable Explosion Shake","0014", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Disable Gravity Effect","0072", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Default Mini Icon","0060", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Switch Spider Teleport Color", "0061", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Switch Dash Fire Color", "0062", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Switch Wave Trail Color","0096", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Hide Playtest Text","0174", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"PRACTICE", "", "performance-title", BPOptionType::Title},
+                        {"Hide Practice Buttons", "0071", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Hide Attempts", "0134", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Enable Auto-Checkpoints","0027", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Enable Quick Checkpoints","0068", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Enable Death Effect","0100", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Enable Normal Music In Editor","0125", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Show Hitboxes","0166", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Disable Player Hitbox","0171", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"PERFORMANCE", "", "performance-title", BPOptionType::Title},
+                        {"Increase Draw Capacity","0066", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Enable Low Detail","0108", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Disable High Object Alert","0082", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Enable Extra LDM","0136", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Increase Maximum Levels","0042", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Disable Level Saving","0119", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Save Gauntlets","0127", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Disable Shader Anti-Aliasing","0155", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"OTHER", "", "other-title", BPOptionType::Title},
+                        {"More Comments","0094", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Load Comments","0090", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"New Completed Filter","0073", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Increase Local Levels Per Page","0093", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Manual Level Order","0084", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Percentage Decimals","0126", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Show Leaderboard Percentage","0099", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Do Not...","0095", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Confirm Exit","0167", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Fast Menu","0168", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"PARENTAL CONTROLS", "", "parental-title", BPOptionType::Title},
+                        {"Disable Comments","0075", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Disable Account Comments","0076", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
+                        {"Only Allow Featured Levels","0077", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc}
                     }});
                     auto bpOptions = BPOptionsLayer::create(options);
                     bpOptions->show();

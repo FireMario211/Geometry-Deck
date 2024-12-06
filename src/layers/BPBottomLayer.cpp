@@ -68,7 +68,7 @@ bool BPBottomLayer::init() {
 
     // ----
     
-    auto selBtn = CCSprite::create("circle.png");
+    auto selBtn = CCSprite::create("circle.png"_spr);
     selBtn->setScale(1.25F);
     auto selBtnIcon = CCLabelBMFont::create("A", "NunitoBold.fnt"_spr);
     selBtnIcon->setColor({0, 0, 0});
@@ -87,7 +87,7 @@ bool BPBottomLayer::init() {
 
     // ----
     
-    auto backBtn = CCSprite::create("circle.png");
+    auto backBtn = CCSprite::create("circle.png"_spr);
     backBtn->setScale(1.25F);
     auto backBtnIcon = CCLabelBMFont::create("B", "NunitoBold.fnt"_spr);
     backBtnIcon->setColor({0, 0, 0});

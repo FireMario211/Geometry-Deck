@@ -159,7 +159,7 @@ void BPOptionsLayer::updateOption(BPOption option, matjson::Value value) {
                                 value = GMDS_Dictionary::getBoolForKey(GM, option.id);
                                 break;
                         }
-                        bool newValue = (option.definedValue.asBool().unwrapOrDefault()) ? value.asBool().unwrapOrDefault() : !value.asBool().unwrapOrDefault();
+                        bool newValue = (option.definedValue.asBool().unwrapOrDefault() == true) ? value.asBool().unwrapOrDefault() : !value.asBool().unwrapOrDefault();
                         auto colorAccent = Mod::get()->getSettingValue<ccColor3B>("color-accent");
                         if (auto bg = as<CCScale9Sprite*>(menuItem->getChildByID("Toggle-BG"))) {
                             if (auto circle = bg->getChildByType<CCSprite>(0)) {
@@ -209,7 +209,7 @@ void BPOptionsLayer::updateOption(BPOption option, matjson::Value value) {
 void BPOptionsLayer::regenCategory(BPCategory category) {
     m_scrollContent->removeAllChildrenWithCleanup(true);
     auto titleLabel = CCLabelBMFont::create(category.name, "NunitoBold.fnt"_spr);
-    titleLabel->limitLabelWidth(60, 1.2F, 1.0F);
+    titleLabel->limitLabelWidth(100, 1.2F, 1.0F);
     m_scrollContent->addChild(titleLabel);
     auto colorAccent = Mod::get()->getSettingValue<ccColor3B>("color-accent");
     m_scrollLayer->m_contentLayer->setContentHeight(category.options.size() * 75.F);
@@ -219,6 +219,9 @@ void BPOptionsLayer::regenCategory(BPCategory category) {
         auto option = category.options[i];
         auto node = CCMenu::create();
         auto label = CCLabelBMFont::create(option.name, "Nunito.fnt"_spr);
+        if (option.type == BPOptionType::Title) {
+            label->setColor({200, 200, 200});
+        }
         label->setScale(0.8F);
         CCMenuItemSpriteExtra* button;
         switch (option.type) {
@@ -229,15 +232,15 @@ void BPOptionsLayer::regenCategory(BPCategory category) {
                         value = Mod::get()->getSettingValue<bool>(option.id);
                         break;
                     case BPValueType::IntVar:
-                        value = !GM->getGameVariable(option.id.c_str());
+                        value = (option.definedValue.asBool().unwrapOrDefault() == true) ? !GM->getGameVariable(option.id.c_str()) : GM->getGameVariable(option.id.c_str());
                         break;
                     case BPValueType::DSDict:
                         value = GMDS_Dictionary::getBoolForKey(GM, option.id);
                         break;
                 }
                 auto bg = CCScale9Sprite::create("square04_001.png");
-                auto circle = CCSprite::create("circle.png");
-                circle->setScale(4.0F);
+                auto circle = CCSprite::create("circle.png"_spr);
+                circle->setScale(3.75F);
                 bg->setColor((value) ? colorAccent : ccc3(30, 30, 40));
                 bg->setContentSize({120, 65});
                 bg->setScale(0.3F);
@@ -263,13 +266,18 @@ void BPOptionsLayer::regenCategory(BPCategory category) {
                 });
                 break;
             }
+            case BPOptionType::Title: {
+                break;
+            }
             default:
                 continue;
         }
-        button->setAnchorPoint({1, 0.5});
+        if (option.type != BPOptionType::Title) {
+            button->setAnchorPoint({1, 0.5});
+            node->addChildAtPosition(button, Anchor::Right, {-15, 0});
+        }
         label->setAnchorPoint({0, 0.5});
         node->addChildAtPosition(label, Anchor::Left, {0, 5});
-        node->addChildAtPosition(button, Anchor::Right, {-15, 0});
         node->setAnchorPoint({0, 0.5});
         node->setContentSize({400, 30});
         node->setID(option.id);
@@ -277,7 +285,7 @@ void BPOptionsLayer::regenCategory(BPCategory category) {
         node->updateLayout();
         // i * 40
         m_scrollContent->addChild(node);
-        if ((i + 1) < category.options.size()) {
+        if ((i + 1) < category.options.size() && category.options[i].type != BPOptionType::Title) {
             m_scrollContent->addChild(BreakLine::create(400.F));
         }
     }
