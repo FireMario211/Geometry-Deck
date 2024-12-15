@@ -83,7 +83,7 @@ Keybinds [Button]
 
 */
 
-class BPOptionsLayer : public CCLayerGradient {
+class BPOptionsLayer : public CCLayerGradient, public TextInputDelegate {
     protected:
         CCMenu* m_sideMenu;
         CCMenu* m_scrollContent;
@@ -91,12 +91,13 @@ class BPOptionsLayer : public CCLayerGradient {
         std::vector<BPCategory> m_categories;
 
         CCScale9Sprite* m_sideSelectionBG;
-        CCScale9Sprite* m_selectionBG;
+        CCScale9Sprite* m_selectionBG = nullptr;
+
         bool isOnSide = true;
         int sideMenuIndex = 0;
         int currentSelIndex = 0;
         void setSMSelected();
-        void setSelected(int tag);
+        void setSelected();
         void enterSelected();
 
         void updateOption(BPOption, matjson::Value);

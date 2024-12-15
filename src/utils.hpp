@@ -5,6 +5,16 @@ using namespace geode::prelude;
 
 class Utils {
     public:
+    template <typename T>
+    static std::vector<T> paginate(const std::vector<T>& array, int size, int page) {
+        std::vector<T> result;
+        if (size <= 0) return result;
+        int startIndex = page * size;
+        int endIndex = std::min(startIndex + size, static_cast<int>(array.size()));
+        if (startIndex >= array.size()) return result;
+        result.insert(result.end(), array.begin() + startIndex, array.begin() + endIndex);
+        return result;
+    }
     static void removeAllInVec(cocos2d::CCLayer* layer, std::vector<std::string> ids) {
         for (auto id : ids) {
             if (auto node = layer->getChildByID(id)) {
@@ -126,7 +136,7 @@ class Utils {
 
         auto p = CCParticleSystemQuad::create();
         p->initWithDictionary(dict, false);
-        
+
         return p;
     }
 };

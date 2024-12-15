@@ -1,10 +1,11 @@
 #include "BPAlert.hpp"
-#include "Geode/utils/cocos.hpp"
+#include "../utils.hpp"
 
 bool BPAlert::init(std::string title, std::vector<BigPicButton> options) {
     if (!this->initWithColor({ 0, 0, 0, 105 })) return false;
     options.push_back({ "Cancel", [this]() { onClose(nullptr); } });
     m_options = options;
+    auto paginated_options = Utils::paginate<BigPicButton>(options, 10, 0);
     this->m_mainLayer = cocos2d::CCLayer::create();
     this->addChild(this->m_mainLayer);
     this->m_buttonMenu = CCMenu::create();
@@ -15,8 +16,8 @@ bool BPAlert::init(std::string title, std::vector<BigPicButton> options) {
     titleLabel->limitLabelWidth(100, 1.0F, 0.5F);
     m_buttonMenu->addChild(titleLabel);
     
-    for (int i = 0; i < m_options.size(); i++) {
-        auto option = m_options[i];
+    for (int i = 0; i < paginated_options.size(); i++) {
+        auto option = paginated_options[i];
         auto bg = CCScale9Sprite::create("square.png");
         bg->setColor({20, 20, 33});
         bg->setContentSize({150, 25});
@@ -51,6 +52,30 @@ bool BPAlert::init(std::string title, std::vector<BigPicButton> options) {
 
     this->runAction(CCSequence::createWithTwoActions(CCDelayTime::create(1.5F), CCCallFunc::create(this, callfunc_selector(BPAlert::willTouch))));
     return true;
+}
+
+void BPAlert::regenItems(int page) {
+    if (m_options.size() <= 10) return;
+    m_buttonMenu->removeAllChildrenWithCleanup(true);
+    auto paginated_options = Utils::paginate<BigPicButton>(m_options, 10, page);
+    for (int i = 0; i < paginated_options.size(); i++) {
+        auto option = paginated_options[i];
+        auto bg = CCScale9Sprite::create("square.png");
+        bg->setColor({20, 20, 33});
+        bg->setContentSize({150, 25});
+        auto label = CCLabelBMFont::create(option.name.c_str(), "Nunito.fnt"_spr);
+        label->setColor({200, 200, 200});
+        label->setScale(0.65F);
+        label->setAnchorPoint({0, 0.1});
+        bg->addChildAtPosition(label, Anchor::Left, {10, 0});
+        auto menuItem = CCMenuItemExt::createSpriteExtra(bg, [this, option](CCObject*) {
+            option.callback();
+            onClose(nullptr);
+        });
+        menuItem->setTag(i + (page * 10));
+        m_buttonMenu->addChild(menuItem);
+    }
+    m_buttonMenu->updateLayout();
 }
 
 void BPAlert::setSelected(int tag, bool selected) {
@@ -95,11 +120,18 @@ void BPAlert::keyDown(cocos2d::enumKeyCodes key) {
     if (key == enumKeyCodes::KEY_Up || key == enumKeyCodes::KEY_ArrowUp || key == enumKeyCodes::CONTROLLER_Up) {
         if (currentlySelected == -2) {
             currentlySelected = m_options.size() - 1;
+            regenItems((int)((currentlySelected + 1) / 10));
             setSelected(currentlySelected, true);
         } else {
             setSelected(currentlySelected, false);
             currentlySelected--;
-            if (currentlySelected < 0) currentlySelected = m_options.size() - 1;
+            if ((currentlySelected + 1) % 10 == 0 && currentlySelected >= 0) {
+                regenItems((int)((currentlySelected) / 10));
+            }
+            if (currentlySelected < 0) {
+                currentlySelected = m_options.size() - 1;
+                regenItems((int)((currentlySelected + 1) / 10));
+            }
             setSelected(currentlySelected, true);
         }
         return;
@@ -108,9 +140,15 @@ void BPAlert::keyDown(cocos2d::enumKeyCodes key) {
             currentlySelected = 0;
             setSelected(currentlySelected, true);
         } else {
+            if ((currentlySelected + 1) % 10 == 0) {
+                regenItems((int)((currentlySelected + 1) / 10));
+            }
             setSelected(currentlySelected, false);
             currentlySelected++;
-            if (currentlySelected > (m_options.size() - 1)) currentlySelected = 0;
+            if (currentlySelected > (m_options.size() - 1)) {
+                currentlySelected = 0;
+                regenItems(0);
+            }
             setSelected(currentlySelected, true);
         }
         return;

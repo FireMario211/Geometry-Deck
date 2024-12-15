@@ -416,25 +416,25 @@ bool BigPictureLayer::init() {
                         {"No Song Limit", "0018", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
                         {"Reduce Quality", "0142", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
                         {"Audio Fix 01", "0159", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
-                        {"Music Offset", "0083", "", BPOptionType::Slider, BPValueType::Geode, nullptr, emptyFunc},
+                        {"Music Offset", "timeOffset", "", BPOptionType::Input, BPValueType::Geode, nullptr, emptyFunc},
                         {"", "debug-btn", "", BPOptionType::Button, BPValueType::Geode, "FMOD Debug", [GM](matjson::Value v) {
                             if (auto fmod = FMODAudioEngine::sharedEngine()) {
                                 FLAlertLayer::create(nullptr,"FMOD Debug",fmod->getFMODStatus(0),"OK",0x0,380.0)->show();
                             }
                         }}
                     }});
-                    std::vector<matjson::Value> resolutions;
-                    std::vector<matjson::Value> texQualities = {"Auto", "High", "Medium", "Low"};
+                    std::vector<std::string> resolutions;
+                    std::vector<std::string> texQualities = {"Auto", "Low", "Medium", "High"};
                     for (int ix = 0; ix < 27; ix++) {
                         auto res = GM->resolutionForKey(ix);
                         resolutions.push_back(fmt::format("{}x{}", res.width, res.height));
                     }
                     options.push_back({"Video", "video.png"_spr, {
-                        {"Display Resolution", "resolution", "", BPOptionType::Slider, BPValueType::DSDict, resolutions, [this, GM](matjson::Value v) {
+                        {"Display Resolution", "resolution", "", BPOptionType::Dropdown, BPValueType::DSDict, resolutions, [this, GM](matjson::Value v) {
                             GM->m_resolution = v.asInt().unwrapOrDefault();
                             hasDoneResChanges = true;
                         }},
-                        {"Texture Quality", "texQuality", "", BPOptionType::Slider, BPValueType::DSDict, texQualities, [this, GM](matjson::Value v) {
+                        {"Texture Quality", "texQuality", "", BPOptionType::Dropdown, BPValueType::DSDict, texQualities, [this, GM](matjson::Value v) {
                             GM->m_texQuality = v.asInt().unwrapOrDefault();
                             hasDoneTextureChanges = true;
                         }},
@@ -442,6 +442,7 @@ bool BigPictureLayer::init() {
                         {"Borderless", "0170", "", BPOptionType::Toggle, BPValueType::IntVar, false, [this](matjson::Value) { hasDoneVideoChanges = true; }},
                         {"Borderless Fix", "0175", "", BPOptionType::Toggle, BPValueType::IntVar, false, [this](matjson::Value) { hasDoneVideoChanges = true; }},
                         {"", "", "Applies changes", BPOptionType::Button, BPValueType::Geode, "Apply Changes", [this, GM](matjson::Value v) {
+                            return FLAlertLayer::create("Error", "Currently this button <cy>does not work properly</c>, as it's unfinished. Please click on the \"Show Video Options\" button instead to manually set.", "OK")->show();
                             if (!hasDoneVideoChanges && !hasDoneTextureChanges && !hasDoneResChanges) return FLAlertLayer::create("Graphics", "No changes have been made.", "OK")->show();
                             bool isFullscreen = GameManager::get()->getGameVariable("0025");
                             bool borderless = GM->getGameVariable("0170");
@@ -487,6 +488,9 @@ bool BigPictureLayer::init() {
                             //ghostVideoLayer->onApply(nullptr);
                             //ghostVideoLayer->release();
                         }},
+                        {"", "", "Applies changes", BPOptionType::Button, BPValueType::Geode, "Show Video Options", [this, GM](matjson::Value v) {
+                            VideoOptionsLayer::create()->show();
+                        }},
                         {"ADVANCED", "", "advanced-title", BPOptionType::Title},
                         {"Smooth Fix", "0023", "Makes some optimizations that can reduce lag. Disable if game speed becomes inconsistent.",
                         BPOptionType::Toggle, BPValueType::IntVar, false, [GM](matjson::Value v) {
@@ -511,21 +515,27 @@ bool BigPictureLayer::init() {
                             #endif
                         }},
                         {"Show FPS", "0115", "Shows frames per second while playing.", BPOptionType::Toggle, BPValueType::IntVar, false, [GM](matjson::Value v) {
-
                             bool value = v.asBool().unwrapOrDefault();
                             CCDirector::sharedDirector()->toggleShowFPS(value, "chatFont.fnt", {0, 0});
                         }},
                         #ifndef GEODE_IS_MOBILE
-                        {"FPS", "0116", "Change the FPS!", BPOptionType::Input, BPValueType::IntVar, nullptr, emptyFunc},
+                        {"Unlock FPS", "0116", "Change the FPS!", BPOptionType::Toggle, BPValueType::IntVar, nullptr, [GM](matjson::Value v) {
+                            bool value = v.asBool().unwrapOrDefault();
+                            if (value) {
+                                GM->updateCustomFPS();
+                            }
+                        }},
+                        {"FPS Value", "customFPSTarget", "", BPOptionType::Input, BPValueType::DSDict, nullptr, [this, GM](matjson::Value v) {
+                            GM->m_customFPSTarget = v.asInt().unwrapOrDefault();
+                        }},
                         {"", "", "Changes the FPS", BPOptionType::Button, BPValueType::Geode, "Apply FPS", [GM](matjson::Value v) {
-                        
+                            GM->updateCustomFPS();
                         }}
                         #endif
                     }});
                     // this is horrible, an example of bad coding
                     // it probably wouldve been so much easier to hook addToggle, but considering the function is inlined on windows, it would not be worth mid-hooking
                     options.push_back({"Gameplay", "gdlogo-cube.png"_spr, {
-                        {"GAMEPLAY", "", "gameplay-title", BPOptionType::Title},
                         {"Auto-Retry", "0026", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
                         {"Enable Faster Reset", "0052", "", BPOptionType::Toggle, BPValueType::IntVar, false, emptyFunc},
                         #ifndef GEODE_IS_MOBILE

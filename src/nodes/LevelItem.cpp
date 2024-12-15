@@ -82,9 +82,11 @@ bool LevelItem::init() {
 }
 
 void LevelItem::selectLevel() {
-    if (auto menuLayer = MenuLayer::get()) {
-        if (menuLayer->getChildByType<BPOptionsLayer>(0)) return;
-    }
+    auto scene = CCScene::get();
+    if (!scene) return;
+    auto menuLayer = scene->getChildByType<MenuLayer>(0);
+    if (!menuLayer) return;
+    if (menuLayer->getChildByType<BPOptionsLayer>(0)) return;
     if (m_level != nullptr) {
         CCDirector::sharedDirector()->pushScene(CCTransitionFade::create(0.5f, LevelInfoLayer::scene(m_level, false)));
     } else {

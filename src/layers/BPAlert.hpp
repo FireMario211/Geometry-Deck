@@ -13,6 +13,7 @@ class BPAlert : public FLAlertLayer {
     protected:
         std::vector<BigPicButton> m_options;
         CCMenu* m_buttonMenu;
+        bool isScrollable = false;
         bool canTouch = false;
         void willTouch() {
             canTouch = true;
@@ -22,6 +23,7 @@ class BPAlert : public FLAlertLayer {
         void keyBackClicked() override {};
         void ccTouchEnded(CCTouch*, CCEvent*) override;
         int currentlySelected = -2;
+        void regenItems(int page);
         void setSelected(int tag, bool selected);
         void enterSelected();
     public:

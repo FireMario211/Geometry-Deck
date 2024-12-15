@@ -247,7 +247,13 @@ class $modify(BigPicIntro, LoadingLayer) {
     }
     bool init(bool refresh) {
         if (!LoadingLayer::init(refresh)) return false;
-        if (refresh) return true;
+        if (auto node = as<CCSprite*>(getChildByID("gd-logo"))) {
+            m_fields->m_gdLogo = node;
+        }
+        if (refresh) {
+            m_fields->playedAnimation = true;
+            return true;
+        }
         auto mod = Mod::get();
         if (!mod) return true;
         auto size = CCDirector::sharedDirector()->getWinSize();
@@ -255,11 +261,8 @@ class $modify(BigPicIntro, LoadingLayer) {
             bg->setTexture(CCSprite::create("GJ_gradientBG.png")->getTexture());
             bg->setColor({10,10,10});
         }
-        if (auto node = as<CCSprite*>(getChildByID("gd-logo"))) {
-            node->setVisible(false);
-            m_fields->m_gdLogo = node;
-        }
-        Utils::removeAllInVec(this, { "robtop-logo", "cocos2d-logo", "fmod-logo" });
+        m_fields->m_gdLogo->setVisible(false);
+        Utils::invisibleInVec(this, { "robtop-logo", "cocos2d-logo", "fmod-logo" });
         auto searchPathRoot = dirs::getModRuntimeDir() / mod->getID() / "resources";
         CCFileUtils::get()->addSearchPath(searchPathRoot.string().c_str());
         m_fields->m_outlineSpr = CCSprite::create("gdlogo-outline.png"_spr);
