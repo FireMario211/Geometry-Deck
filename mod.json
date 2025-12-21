@@ -1,5 +1,5 @@
 {
-	"geode": "4.0.1",
+	"geode": "4.10.0",
 	"gd": {
 		"win": "2.2074",
 		"android": "2.2074",
@@ -25,6 +25,12 @@
     },
     "tags": ["universal", "enhancement", "interface", "customization", "modtober24"],
     "settings": {
+        "enabled": {
+            "name": "Enabled",
+            "description": "Whether or not to overhaul the game to look like Steam's Big Picture Mode. (The intro animation will still play)",
+            "default": true,
+            "type": "bool"
+        },
         "battery-percentage": {
             "name": "Battery Percentage",
             "description": "If the battery percentage should show next to the battery status.",

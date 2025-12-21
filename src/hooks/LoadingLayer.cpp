@@ -56,6 +56,7 @@ class $modify(BigPicIntro, LoadingLayer) {
             m_fields->m_gdLogo->setPosition(oldPos);
         }
         m_fields->m_gdLogo->setVisible(true);
+        m_fields->m_gdLogo->setOpacity(0);
         m_fields->m_gdLogo->runAction(CCSequence::create(
             CCEaseExponentialOut::create(
                 CCFadeIn::create(0.5F)
